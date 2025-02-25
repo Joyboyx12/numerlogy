@@ -7,7 +7,7 @@ function chisonhancach(fullName) {
 
     thistext = fullName.split(" ")
     for(var i = 0; i < this.thistext.length; i++){
-        destinyNumber += singleword_nguyenam(thistext[i])
+        destinyNumber += singleword_phuam(thistext[i])
     }
   
     return sumDigits(destinyNumber);
@@ -15,7 +15,7 @@ function chisonhancach(fullName) {
 
 //b, c, d, đ, g, h, k, l, m, n, p, q, r, s, t, v, x
 
-function singleword_nguyenam(word){
+function singleword_phuam(word){
     // Bảng chữ cái và số tương ứng
     word =  tiengviet(word).toUpperCase();
     var letterToNumber = {

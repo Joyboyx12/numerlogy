@@ -22,6 +22,7 @@ const chisonam = require('./module/16)chisonam.js');
 const chisothang = require('./module/17)chisothang.js');
 const chisongay = require('./module/18)chisongay.js');
 const tenrieng = require('./module/19)tenrieng.js');
+const nonghiep = require('./module/20)nonghiep.js');
 app.get('/', (req, res) => {
     const name = req.query.name ; // Default value
     const birth = req.query.birth; // Default value
@@ -43,6 +44,7 @@ app.get('/', (req, res) => {
         chisochang: chisochang(birth),
         chisothachthuc: chisothachthuc(birth),
         tenrieng: tenrieng(name),
+        nonghiep: nonghiep(name, birth),
         chisothang: chisothang(birth, 6, 2025), // Example for June 2025
         chisongay: chisongay(birth, 20, 6, 2021) // Example for June 20, 2021
 
