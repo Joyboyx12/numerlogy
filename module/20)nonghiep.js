@@ -90,6 +90,9 @@ function chisononghiep(fullName,dateOfBirth) {
         tongnonghiep.push("19/1")
     }
 
+    if (tongnonghiep.length == 0) {
+        return "...";
+    }
     return Array.from(new Set(tongnonghiep));
 }
 

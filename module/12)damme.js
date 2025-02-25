@@ -36,7 +36,10 @@ function calculatePassionIndex(characters) {
         mostPassionateChars.push(char);
       }
     }
-  
+    if (mostPassionateChars.length == 0) {
+      return "...";
+  }
+
     return mostPassionateChars;
   }
 

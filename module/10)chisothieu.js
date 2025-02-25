@@ -32,6 +32,10 @@ var letterToNumber = {
         }
     }
 
+    if (numbersMissing.length == 0) {
+        return "...";
+    }
+
     return numbersMissing;
 }
 
