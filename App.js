@@ -21,7 +21,7 @@ const chisothachthuc = require('./module/15)chisothachthuc.js');
 const chisonam = require('./module/16)chisonam.js');
 const chisothang = require('./module/17)chisothang.js');
 const chisongay = require('./module/18)chisongay.js');
-
+const tenrieng = require('./module/19)tenrieng.js');
 app.get('/', (req, res) => {
     const name = req.query.name ; // Default value
     const birth = req.query.birth; // Default value
@@ -34,7 +34,7 @@ app.get('/', (req, res) => {
         chisocanbang: chisocanbang(name),
         chisonhancach: chisonhancach(name),
         chisongaysinh: chisongaysinh(birth),
-        chisolienket: chisolienket(name, birth),
+        chisodd_sm: chisolienket(name, birth),
         linhhonnhancach: linhhonnhancach(name),
         chisothieu: chisothieu(name),
         sucmanhtiemthuc: sucmanhtiemthuc(name),
@@ -42,8 +42,10 @@ app.get('/', (req, res) => {
         tuduylytri: tuduylytri(name, birth),
         chisochang: chisochang(birth),
         chisothachthuc: chisothachthuc(birth),
+        tenrieng: tenrieng(name),
         chisothang: chisothang(birth, 6, 2025), // Example for June 2025
         chisongay: chisongay(birth, 20, 6, 2021) // Example for June 20, 2021
+
     };
 
     res.json(response);
