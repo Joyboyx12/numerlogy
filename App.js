@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 const port = 3000;
-
+const { MongoClient } = require('mongodb');
 const chisoduongdoi = require('./module/1)duongdoi.js');
 const chisosumenh = require('./module/2)sumenh.js');
 const chisotruongthanh = require('./module/3)truongthanh.js');
@@ -17,16 +17,21 @@ const sucmanhtiemthuc = require('./module/11)sucmanhtiemthuc.js');
 const chisodamme = require('./module/12)damme.js');
 const tuduylytri = require('./module/13)tuduylytri.js');
 const chisochang = require('./module/14)chisochang.js');
-const chisothachthuc = require('./module/15)chisothachthuc.js');
-const chisonam = require('./module/16)chisonam.js');
-const chisothang = require('./module/17)chisothang.js');
-const chisongay = require('./module/18)chisongay.js');
+const chisothachthuc = require('./module/15)chisovuotkho.js');
+const chisonoinam = require('./module/16)chisonoinam.js');
+const chisonoithang = require('./module/17)chisonoithang.js');
+const chisongay = require('./module/18)chisonoingay.js');
 const tenrieng = require('./module/19)tenrieng.js');
 const nonghiep = require('./module/20)nonghiep.js');
+
+const uri = "mongodb+srv://vnh4i99:Lrosp74syv1zkJZw@cluster0.t5twm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+
 app.get('/', (req, res) => {
     const name = req.query.name ; // Default value
     const birth = req.query.birth; // Default value
-
+    var currentTime = new Date()
     let response = {
         chisoduongdoi: chisoduongdoi(birth),
         chisosumenh: chisosumenh(name),
@@ -45,119 +50,64 @@ app.get('/', (req, res) => {
         chisothachthuc: chisothachthuc(birth),
         tenrieng: tenrieng(name),
         nonghiep: nonghiep(name, birth),
-        chisothang: chisothang(birth, 6, 2025), // Example for June 2025
+        noinam: chisonoinam(birth,currentTime.getFullYear),
+        chisonoithang: chisothang(birth), // Example for June 2025
         chisongay: chisongay(birth, 20, 6, 2021) // Example for June 20, 2021
-
     };
 
     res.json(response);
 });
 
 
-// Airtable API configuration
-const AIRTABLE_API_URL = 'https://api.airtable.com/v0/appHYfSPllaGJe5fp/tonghopchiso';
-const AIRTABLE_API_TOKEN = 'pat7vOlL1umYuSbcM.1476cbebe270640b2e85f3c7ffec9ff0eb88aaca4525ea36f97e4c8f59fd8820'; // Replace with your actual token
 
-// Lưu trữ dữ liệu Airtable trong bộ nhớ
-let airtableData = [];
-
-// Fetch dữ liệu Airtable chỉ một lần
-const fetchAirtableData = async () => {
-    if (airtableData.length === 0) { // Nếu dữ liệu chưa được fetch
+// Hàm khởi động server và kết nối MongoDB, định nghĩa các endpoint liên quan đến DB
+async function startServer() {
+    try {
+      // Kết nối đến MongoDB
+      await client.connect();
+      console.log("Đã kết nối thành công đến MongoDB");
+  
+      // Chọn database và các collection
+      const db = client.db("ThanSoHocDB");
+      const duongDoiCollection = db.collection("ChiSoDuongDoi");
+      const suMenhCollection = db.collection("ChiSoSuMenh");
+  
+      // Endpoint cho Chỉ Số Đường Đời, ví dụ: /chisoduongdoi/1
+      app.get('/chisoduongdoi/:so', async (req, res) => {
         try {
-            const response = await axios.get(AIRTABLE_API_URL, {
-                headers: {
-                    Authorization: `Bearer ${AIRTABLE_API_TOKEN}`
-                }
-            });
-            airtableData = response.data.records; // Lưu trữ dữ liệu vào bộ nhớ
-            console.log('Airtable data fetched and stored in memory');
+          const soValue = parseInt(req.params.so);
+          const result = await duongDoiCollection.findOne({ so: soValue });
+          if (!result) {
+            return res.status(404).json({ message: 'Không tìm thấy dữ liệu cho chỉ số đường đời' });
+          }
+          res.json(result);
         } catch (error) {
-            console.error('Error fetching data from Airtable:', error);
-            throw error;
+          res.status(500).json({ error: error.message });
         }
+      });
+  
+      // Endpoint cho Chỉ Số Sứ Mệnh, ví dụ: /chisolinhhon/2
+      app.get('/chisolinhhon/:so', async (req, res) => {
+        try {
+          const soValue = parseInt(req.params.so);
+          const result = await suMenhCollection.findOne({ so: soValue });
+          if (!result) {
+            return res.status(404).json({ message: 'Không tìm thấy dữ liệu cho chỉ số sứ mệnh' });
+          }
+          res.json(result);
+        } catch (error) {
+          res.status(500).json({ error: error.message });
+        }
+      });
+  
+      // Khởi động server
+      app.listen(port, () => {
+        console.log(`Server is running on http://localhost:${port}`);
+      });
+    } catch (err) {
+      console.error("Lỗi khi kết nối đến MongoDB:", err);
     }
-};
+  }
 
-// Function to match the computed value with Airtable meaning
-const getMeaningFromAirtable = (number) => {
-    const record = airtableData.find((r) => parseInt(r.fields.Number) === number);
-    return record ? record.fields.Meaning : 'No meaning found for this number';
-};
-
-app.get('/get', async (req, res) => {
-    const name = "Nguyễn Hoàng Hải"; 
-    const birth = "30/12/1999"; 
-
-    // Fetch dữ liệu Airtable một lần nếu chưa được fetch
-    await fetchAirtableData();
-
-    // Thực hiện tính toán các chỉ số
-    const chisoduongdoiValue = chisoduongdoi(birth);
-    const chisosumenhValue = chisosumenh(name);
-    const chisotruongthanhValue = chisotruongthanh(name, birth);
-    const chisolinhhonValue = chisolinhhon(name);
-    const chisocanbangValue = chisocanbang(name);
-    const chisonhancachValue = chisonhancach(name);
-    const chisongaysinhValue = chisongaysinh(birth);
-    const chisolienketValue = chisolienket(name, birth);
-    const linhhonnhancachValue = linhhonnhancach(name);
-    const chisothieuValue = chisothieu(name);
-    const sucmanhtiemthucValue = sucmanhtiemthuc(name);
-    const chisodammeValue = chisodamme(name);
-    const tuduylytriValue = tuduylytri(name, birth);
-    const chisochangValue = chisochang(birth);
-    const chisothachthucValue = chisothachthuc(birth);
-    const chisothangValue = chisothang(birth, 6, 2025); // Ví dụ cho tháng 6, 2025
-    const chisongayValue = chisongay(birth, 20, 6, 2021); // Ví dụ cho ngày 20 tháng 6, 2021
-
-    // Lấy meaning từ Airtable
-    const chisoduongdoiMeaning = getMeaningFromAirtable(chisoduongdoiValue);
-    const chisosumenhMeaning = getMeaningFromAirtable(chisosumenhValue);
-    const chisotruongthanhMeaning = getMeaningFromAirtable(chisotruongthanhValue);
-    const chisolinhhonMeaning = getMeaningFromAirtable(chisolinhhonValue);
-    const chisocanbangMeaning = getMeaningFromAirtable(chisocanbangValue);
-    const chisonhancachMeaning = getMeaningFromAirtable(chisonhancachValue);
-    const chisongaysinhMeaning = getMeaningFromAirtable(chisongaysinhValue);
-    const chisolienketMeaning = getMeaningFromAirtable(chisolienketValue);
-    const linhhonnhancachMeaning = getMeaningFromAirtable(linhhonnhancachValue);
-    const chisothieuMeaning = getMeaningFromAirtable(chisothieuValue);
-    const sucmanhtiemthucMeaning = getMeaningFromAirtable(sucmanhtiemthucValue);
-    const chisodammeMeaning = getMeaningFromAirtable(chisodammeValue);
-    const tuduylytriMeaning = getMeaningFromAirtable(tuduylytriValue);
-    const chisochangMeaning = getMeaningFromAirtable(chisochangValue);
-    const chisothachthucMeaning = getMeaningFromAirtable(chisothachthucValue);
-    const chisothangMeaning = getMeaningFromAirtable(chisothangValue);
-    const chisongayMeaning = getMeaningFromAirtable(chisongayValue);
-
-    let response = {
-        chisoduongdoi: { value: chisoduongdoiValue, meaning: chisoduongdoiMeaning },
-        chisosumenh: { value: chisosumenhValue, meaning: chisosumenhMeaning },
-        chisotruongthanh: { value: chisotruongthanhValue, meaning: chisotruongthanhMeaning },
-        chisolinhhon: { value: chisolinhhonValue, meaning: chisolinhhonMeaning },
-        chisocanbang: { value: chisocanbangValue, meaning: chisocanbangMeaning },
-        chisonhancach: { value: chisonhancachValue, meaning: chisonhancachMeaning },
-        chisongaysinh: { value: chisongaysinhValue, meaning: chisongaysinhMeaning },
-        chisolienket: { value: chisolienketValue, meaning: chisolienketMeaning },
-        linhhonnhancach: { value: linhhonnhancachValue, meaning: linhhonnhancachMeaning },
-        chisothieu: { value: chisothieuValue, meaning: chisothieuMeaning },
-        sucmanhtiemthuc: { value: sucmanhtiemthucValue, meaning: sucmanhtiemthucMeaning },
-        chisodamme: { value: chisodammeValue, meaning: chisodammeMeaning },
-        tuduylytri: { value: tuduylytriValue, meaning: tuduylytriMeaning },
-        chisochang: { value: chisochangValue, meaning: chisochangMeaning },
-        chisothachthuc: { value: chisothachthucValue, meaning: chisothachthucMeaning },
-        chisothang: { value: chisothangValue, meaning: chisothangMeaning },
-        chisongay: { value: chisongayValue, meaning: chisongayMeaning }
-    };
-
-    res.json(response);
-});
-
-
-
-
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
-});
-
-
+  // Gọi hàm khởi động server
+startServer().catch(console.error);
